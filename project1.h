@@ -20,8 +20,12 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netdb.h>
+#include <unistd.h>
 
 #define SIZE 1024
+
+#define HOST_NAME_LENGTH 255
 
 #define MAXLINE 1024
 
@@ -29,7 +33,7 @@
 
 int connfd;
 
-bool legal_port(char port[], int *parsed_port);
+bool is_legal_port(char port[], int *parsed_port);
 
 void err_n_quit(char *msg);
 
@@ -42,10 +46,14 @@ struct Server {
 
 void signalHandler(int signalValue);
 
-int get_request_type(char msg[]);
+int get_request_type(const char msg[]);
 
 void handle_response(char *response, char *out, int out_size);
 
-void get_cpu_id();
+void get_cpu_id(char *arr, int size);
 
 void get_hostname(int size, char *arr);
+
+int get_hostname2(char *out, int size);
+
+int get_cpu_load(char *out, int size);

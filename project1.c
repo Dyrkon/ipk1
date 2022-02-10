@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
 
 	struct Server server;
 
-	if (!legal_port(argv[1], &(server.port))) {
+	if (!is_legal_port(argv[1], &(server.port))) {
 		fprintf(stderr, "Port number contains illegal characters.\n");
 		return 1;
 	}
@@ -77,14 +77,14 @@ int main(int argc, char *argv[]) {
 }
 
 
-bool legal_port(char port[], int *parsed_port) {
+bool is_legal_port(char port[], int *parsed_port) {
 	for (int i = 0; port[i] != '\0'; ++i) {
 		if (!isdigit(port[i])) {
 			return false;
 		}
 	}
 
-	*parsed_port = strtol(port, NULL, 10);
+	*parsed_port = (int)strtol(port, NULL, 10);
 
 	return true;
 }
@@ -100,7 +100,7 @@ void signalHandler(int signalValue)
 	exit(0);
 }
 
-int get_request_type(char msg[]) {
+int get_request_type(const char msg[]) {
 	char command[MAXLINE];
 
 	int i = 5;
@@ -127,12 +127,13 @@ void handle_response(char *response, char *out, int out_size) {
 	switch (get_request_type(response)) {
 		case 0:
 			get_hostname(LINELEN, out);
+			get_hostname2(out, HOST_NAME_LENGTH);
 			break;
 		case 1:
-			get_cpu_id(out_size, out);
+			get_cpu_id(out, out_size);
 			break;
 		case 2:
-			printf("load\n");
+			get_cpu_load(out, out_size);
 			break;
 		default:
 			fprintf(stderr, "Unknown command\n");
@@ -140,7 +141,7 @@ void handle_response(char *response, char *out, int out_size) {
 	}
 }
 
-void get_cpu_id(int size, char *arr) {
+void get_cpu_id(char *arr, int size) {
 	FILE *cpu_info = fopen("/proc/cpuinfo", "r");
 
 	if (cpu_info == NULL) {
@@ -165,10 +166,10 @@ void get_cpu_id(int size, char *arr) {
 			if (i > size - 1) {
 				err_n_quit("CPU name is too long\n");
 			}
-			arr[i] = c;
+			arr[i] = (char)c;
 		}
 
-		arr[i+1] = '\0';
+		arr[i] = '\0';
 
 		break;
 	}
@@ -182,4 +183,73 @@ void get_hostname(int size, char *arr) {
 	}
 
 	fscanf(hostname, "%s", arr);
+}
+
+int get_hostname2(char *out, int size) {
+	struct addrinfo hints, *info, *p;
+	int gai_result;
+
+	char hostname[HOST_NAME_LENGTH];
+	hostname[HOST_NAME_LENGTH-1] = '\0';
+	gethostname(hostname, HOST_NAME_LENGTH-1);
+
+	memset(&hints, 0, sizeof hints);
+	hints.ai_family = AF_UNSPEC; /*either IPV4 or IPV6*/
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_flags = AI_CANONNAME;
+
+	if ((gai_result = getaddrinfo(hostname, "http", &hints, &info)) != 0) {
+		err_n_quit("Failed to obtain hostname");
+	}
+
+	for(p = info; p != NULL; p = p->ai_next) {
+		if (p->ai_canonname != NULL) {
+			memcpy(out, p->ai_canonname, size);
+		}
+	}
+
+	freeaddrinfo(info);
+
+	return 0;
+}
+
+int get_cpu_load(char *out, int size)
+{
+	char str[100];
+	const char d[2] = " ";
+	char* token;
+	int i = 0, times = 2, lag = 1;
+	long int sum = 0, idle, lastSum = 0,lastIdle = 0;
+	long double idleFraction;
+
+	while(times>0){
+		FILE* fp = fopen("/proc/stat","r");
+		i = 0;
+		fgets(str,100,fp);
+		fclose(fp);
+		token = strtok(str,d);
+		sum = 0;
+		while(token!=NULL){
+			token = strtok(NULL,d);
+			if(token!=NULL){
+				sum += strtol(token, NULL, 10);
+
+				if(i==3)
+					idle = strtol(token, NULL, 10);
+
+				i++;
+			}
+		}
+		idleFraction = 100 - (double)(idle-lastIdle)*100.0/(double)(sum-lastSum);
+		snprintf(out, size, "%d%%", (int)idleFraction);
+
+		lastIdle = idle;
+		lastSum = sum;
+
+
+		times--;
+		sleep(lag);
+	}
+
+	return 0;
 }
