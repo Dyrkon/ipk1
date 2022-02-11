@@ -94,13 +94,13 @@ void err_n_quit(char *msg) {
 	exit(1);
 }
 
-void signalHandler(int signalValue)
+void signalHandler()
 {
 	close(connfd);
 	exit(0);
 }
 
-int get_request_type(const char msg[]) {
+int get_request_type(unsigned char msg[]) {
 	char command[MAXLINE];
 
 	int i = 5;
@@ -110,29 +110,28 @@ int get_request_type(const char msg[]) {
 	command[i-5] = '\0';
 
 	if (!strcmp(command, "hostname")) {
-		return 0;
+		return HOSTNAME;
 	}
 	else if (!strcmp(command, "cpu-name")){
-		return 1;
+		return CPU_ID;
 	}
 	else if (!strcmp(command, "load")){
-		return 2;
+		return LOAD;
 	}
 	else {
 		return -1;
 	}
 }
 
-void handle_response(char *response, char *out, int out_size) {
+void handle_response(unsigned char *response, char *out, int out_size) {
 	switch (get_request_type(response)) {
-		case 0:
-			get_hostname(LINELEN, out);
-			get_hostname2(out, HOST_NAME_LENGTH);
+		case HOSTNAME:
+			get_hostname(out, HOST_NAME_LENGTH);
 			break;
-		case 1:
+		case CPU_ID:
 			get_cpu_id(out, out_size);
 			break;
-		case 2:
+		case LOAD:
 			get_cpu_load(out, out_size);
 			break;
 		default:
@@ -175,17 +174,7 @@ void get_cpu_id(char *arr, int size) {
 	}
 }
 
-void get_hostname(int size, char *arr) {
-	FILE *hostname = fopen("/etc/hostname", "r");
-
-	if (hostname == NULL) {
-		err_n_quit("Failed to get hostname");
-	}
-
-	fscanf(hostname, "%s", arr);
-}
-
-int get_hostname2(char *out, int size) {
+int get_hostname(char *out, int size) {
 	struct addrinfo hints, *info, *p;
 	int gai_result;
 

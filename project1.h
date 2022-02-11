@@ -33,6 +33,8 @@
 
 int connfd;
 
+enum request{HOSTNAME, CPU_ID, LOAD};
+
 bool is_legal_port(char port[], int *parsed_port);
 
 void err_n_quit(char *msg);
@@ -44,16 +46,14 @@ struct Server {
 	struct sockaddr_in address;
 };
 
-void signalHandler(int signalValue);
+void signalHandler();
 
-int get_request_type(const char msg[]);
+int get_request_type(unsigned char msg[]);
 
-void handle_response(char *response, char *out, int out_size);
+void handle_response(unsigned char *response, char *out, int out_size);
 
 void get_cpu_id(char *arr, int size);
 
-void get_hostname(int size, char *arr);
-
-int get_hostname2(char *out, int size);
+int get_hostname(char *out, int size);
 
 int get_cpu_load(char *out, int size);
