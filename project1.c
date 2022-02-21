@@ -202,6 +202,7 @@ int get_hostname(char *out, int size) {
 	return 0;
 }
 
+// Code for cpu load taken and modified from https://rosettacode.org/wiki/Linux_CPU_utilization#C
 int get_cpu_load(char *out, int size)
 {
 	char str[100];
