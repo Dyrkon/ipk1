@@ -1,19 +1,48 @@
-# První IPK projekt - Matěj Mudra (xmudra04)
+# IPK projekt 1
 
-## Popis projektu
+Projekt v jazyce C který implementuje jednodychý server poskytující informace o jeho hostiteli.
 
-Projekt je napsaný v C za pomoci knihoven ze skupiny knihoven pro implementaci socketů např. **<sys/socket.h>**, **<netinet/in.h>** nebo **<arpa/inet.h>**.
-<p>Skládá se principiálně ze tří částí:</p>
+## Příprava a instalace
 
-- Nastavení socketů
-- Smyčka přijímacící zprávy
-- Získávání vyžádaných informací
+Soubor buď rozbalíte po stažení ze školního serveru, nebo v případě selhání pullnutím [tagu](https://github.com/Dyrkon/ipk1) z githubu.
 
-## Spuštění projektu
+### Prekvizity
 
-- Projekt přeložíme pomocí příkazu &#8222;**make**"
-- Program spustíme příkazem &#8222;./hinfosvc **PORT** &", kde **PORT** je libovolně zvolený dostupný / volný port
-- Odpovědi serveru dostaneme po zadání adresy localhost na zvoleném portu do prohlížeče, nebo pomocí příkazu v demonstrační sekci
+Co budete potřebovat pro spuštění projektu:
 
+* Linux
+* make
+* gcc
+* curl
 
-## Příklady použití projektu
+### Instalace
+
+Projekt připravíte ke spuštění následujícím způsobem:
+
+```
+$ # přesuňte se do složky s projektem
+$ make
+$ # tímto byl vytvořen binární soubor hinfosvc
+```
+
+## Spuštění
+
+Projekt můžete spustit a testovat následovně:
+
+```
+$ ./hinfosvc 5000 & # port můžete zvolit libovolně
+```
+Nyní jste spustili server a můžete mu posílat dotazy několika způsoby:
+```
+$ curl http://localhost:5000/hostname
+$ curl http://localhost:5000/cpu-name
+$ curl http://localhost:5000/load
+```
+Alternativně můžete server dotazovat z libovolného prohlížeče zadáním adresy ve tvary:
+```
+http://localhost:5000/hostname
+```
+
+## Zdroje a poznámky TODO
+
+*
