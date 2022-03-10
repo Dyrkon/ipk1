@@ -43,6 +43,8 @@ Alternativně můžete server dotazovat z libovolného prohlížeče zadáním a
 http://localhost:5000/hostname
 ```
 
-## Zdroje a poznámky TODO
+## Zdroje a poznámky
+* [Kod pro zátěž procesoru](https://rosettacode.org/wiki/Linux_CPU_utilization#C)
+* [Kod pro získání hostname a domény](https://stackoverflow.com/questions/504810/how-do-i-find-the-current-machines-full-hostname-in-c-hostname-and-domain-info)
 
-*
+

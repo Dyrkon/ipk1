@@ -68,11 +68,17 @@ int main(int argc, char *argv[]) {
 
 		char out_msg[LINELEN];
 
-		// Send the received message to determine validity and further action / response
-		handle_response(recvline, out_msg, LINELEN);
+		int response_successful = 0;
 
-		// Send correct response back
-		snprintf((char *)buff, sizeof(buff), "HTTP/1.0 200 OK\r\n\r\n%s", out_msg);
+		// Send the received message to determine validity and further action / response
+		response_successful = handle_response(recvline, out_msg, LINELEN);
+
+		if (response_successful == 0) {
+			// Send correct response back
+			snprintf((char *)buff, sizeof(buff), "HTTP/1.1 200 OK\r\nContent-Type: text/plain;\r\n\r\n%s", out_msg);
+		} else {
+			snprintf((char *)buff, sizeof(buff), "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain;\r\n\r\n");
+		}
 
 		write(connfd, (char *)buff, strlen((char *)buff));
 		close(connfd);
@@ -116,7 +122,6 @@ int get_request_type(unsigned char msg[]) {
 	}
 	command[i-5] = '\0';
 
-	printf("%s", msg);
 	if (!strcmp(command, "hostname")) {
 		return HOSTNAME;
 	}
@@ -132,7 +137,7 @@ int get_request_type(unsigned char msg[]) {
 }
 
 // Runs function according to what is given by response. Outputs error if given invalid option
-void handle_response(unsigned char *response, char *out, int out_size) {
+int handle_response(unsigned char *response, char *out, int out_size) {
 	switch (get_request_type(response)) {
 		case HOSTNAME:
 			get_hostname(out, HOST_NAME_LENGTH);
@@ -144,9 +149,9 @@ void handle_response(unsigned char *response, char *out, int out_size) {
 			get_cpu_load(out, out_size);
 			break;
 		default:
-			fprintf(stderr, "Unknown command\n");
-			break;
+			return 1;
 	}
+	return 0;
 }
 
 // Parses CPU id and information from /proc/cpuinfo file

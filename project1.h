@@ -40,7 +40,7 @@ void signalHandler();
 
 int get_request_type(unsigned char msg[]);
 
-void handle_response(unsigned char *response, char *out, int out_size);
+int handle_response(unsigned char *response, char *out, int out_size);
 
 void get_cpu_id(char *arr, int size);
 
