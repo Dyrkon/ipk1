@@ -22,13 +22,11 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
-#define SIZE 1024
-
 #define HOST_NAME_LENGTH 255
 
 #define MAXLINE 1024
 
-#define LINELEN 100
+#define LINELEN 200
 
 int connfd;
 
@@ -37,13 +35,6 @@ enum request{HOSTNAME, CPU_ID, LOAD};
 bool is_legal_port(char port[], int *parsed_port);
 
 void err_n_quit(char *msg);
-
-struct Server {
-	int port;
-	int backlog;
-
-	struct sockaddr_in address;
-};
 
 void signalHandler();
 

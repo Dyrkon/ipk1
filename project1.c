@@ -8,16 +8,16 @@
 
 #include "project1.h"
 
-
 int main(int argc, char *argv[]) {
 	if (argc != 2) {
 		fprintf(stderr, "The port needs to be specified.\n");
 		return 1;
 	}
 
-	struct Server server;
+	int port;
+	struct sockaddr_in address;
 
-	if (!is_legal_port(argv[1], &(server.port))) {
+	if (!is_legal_port(argv[1], &(port))) {
 		fprintf(stderr, "Port number contains illegal characters.\n");
 		return 1;
 	}
@@ -31,13 +31,13 @@ int main(int argc, char *argv[]) {
 		err_n_quit("Failed to create new socket.\n");
 
 	// Setting up address
-	bzero(&(server.address), sizeof(server.address));
-	server.address.sin_family = AF_INET;
-	server.address.sin_addr.s_addr = htonl(INADDR_ANY);
-	server.address.sin_port = htons(server.port);
+	bzero(&(address), sizeof(address));
+	address.sin_family = AF_INET;
+	address.sin_addr.s_addr = htonl(INADDR_ANY);
+	address.sin_port = htons(port);
 
 	// Associating(binding) socket to address
-	if ((bind(listenfd, (const struct sockaddr *) &(server.address), sizeof(server.address))) < 0)
+	if ((bind(listenfd, (const struct sockaddr *) &(address), sizeof(address))) < 0)
 		err_n_quit("Binding error.\n");
 
 	// Start listening on address
@@ -46,13 +46,14 @@ int main(int argc, char *argv[]) {
 
 	for ( ; ; ) {
 		// Waiting until connection arrives, then returns "file descriptor" to the connection
-		printf("Waiting for a connection on port %d.\n", server.port);
+		printf("Waiting for a connection on port %d.\n", port);
 		fflush(stdout);
 		signal(SIGINT, signalHandler);
 		connfd = accept(listenfd, (struct sockaddr *) NULL, NULL);
 
 		memset(recvline, 0, MAXLINE);
 
+		// Receiving message
 		while ((n = read(connfd, recvline, MAXLINE-1)) > 0) {
 			fprintf(stdout, "\n%s\n", recvline);
 
@@ -67,8 +68,10 @@ int main(int argc, char *argv[]) {
 
 		char out_msg[LINELEN];
 
+		// Send the received message to determine validity and further action / response
 		handle_response(recvline, out_msg, LINELEN);
 
+		// Send correct response back
 		snprintf((char *)buff, sizeof(buff), "HTTP/1.0 200 OK\r\n\r\n%s", out_msg);
 
 		write(connfd, (char *)buff, strlen((char *)buff));
@@ -76,7 +79,7 @@ int main(int argc, char *argv[]) {
 	}
 }
 
-
+// Determines whether is the port passed in parameters valid
 bool is_legal_port(char port[], int *parsed_port) {
 	for (int i = 0; port[i] != '\0'; ++i) {
 		if (!isdigit(port[i])) {
@@ -89,17 +92,21 @@ bool is_legal_port(char port[], int *parsed_port) {
 	return true;
 }
 
+// Print error to STDERR and exit with exit code 1
 void err_n_quit(char *msg) {
 	fprintf(stderr, "%s", msg);
 	exit(1);
 }
 
+// Overrides default exit value after the program is killed with CTRL + C and
+// closes the file descriptor of the connection
 void signalHandler()
 {
 	close(connfd);
 	exit(0);
 }
 
+// Determines the request type received request pass in msg parameter and returns assigned value from enum
 int get_request_type(unsigned char msg[]) {
 	char command[MAXLINE];
 
@@ -109,6 +116,7 @@ int get_request_type(unsigned char msg[]) {
 	}
 	command[i-5] = '\0';
 
+	printf("%s", msg);
 	if (!strcmp(command, "hostname")) {
 		return HOSTNAME;
 	}
@@ -123,6 +131,7 @@ int get_request_type(unsigned char msg[]) {
 	}
 }
 
+// Runs function according to what is given by response. Outputs error if given invalid option
 void handle_response(unsigned char *response, char *out, int out_size) {
 	switch (get_request_type(response)) {
 		case HOSTNAME:
@@ -140,6 +149,7 @@ void handle_response(unsigned char *response, char *out, int out_size) {
 	}
 }
 
+// Parses CPU id and information from /proc/cpuinfo file
 void get_cpu_id(char *arr, int size) {
 	FILE *cpu_info = fopen("/proc/cpuinfo", "r");
 
@@ -174,9 +184,9 @@ void get_cpu_id(char *arr, int size) {
 	}
 }
 
+// Code for getting hostname and domain in POSIX compliant way taken from: https://stackoverflow.com/questions/504810/how-do-i-find-the-current-machines-full-hostname-in-c-hostname-and-domain-info
 int get_hostname(char *out, int size) {
 	struct addrinfo hints, *info, *p;
-	int gai_result;
 
 	char hostname[HOST_NAME_LENGTH];
 	hostname[HOST_NAME_LENGTH-1] = '\0';
@@ -187,7 +197,7 @@ int get_hostname(char *out, int size) {
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_CANONNAME;
 
-	if ((gai_result = getaddrinfo(hostname, "http", &hints, &info)) != 0) {
+	if (getaddrinfo(hostname, "http", &hints, &info) != 0) {
 		err_n_quit("Failed to obtain hostname");
 	}
 
